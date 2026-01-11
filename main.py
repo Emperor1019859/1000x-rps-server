@@ -36,7 +36,7 @@ async def root():
     return {"Hello": "World"}
 
 
-@app.get("/queue")
+@app.post("/queue")
 async def queue() -> dict:
     request_id = str(uuid.uuid4())
 

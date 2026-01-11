@@ -23,7 +23,7 @@
     4. If capacity is exceeded, the server returns `429 Too Many Requests`.
     5. Upon completion (Kafka response, timeout, or error), the ID is removed from Redis via a `finally` block in the endpoint.
 *   **Kafka Flow:**
-    1. Request enters `queue` endpoint.
+    1. Request enters `POST /queue` endpoint.
     2. Produced to `tasks` topic with a `correlation_id`.
     3. Server subscribes to `results` topic.
     4. Result is matched via `correlation_id` and returned to user.

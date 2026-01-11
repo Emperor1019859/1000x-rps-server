@@ -36,7 +36,7 @@ def mock_kafka():
     main.kafka_manager.consumer = MagicMock()
 
     async def slow_get_gift_code(*args, **kwargs):
-        await asyncio.sleep(0.01)  # Small sleep to ensure overlap
+        await asyncio.sleep(0.1)  # Small sleep to ensure overlap
         return "MOCK-GIFT-CODE"
 
     # Mock the response
@@ -55,7 +55,7 @@ def mock_kafka():
 async def test_queue_10_users(mock_kafka):
     """Happy flow: 10 concurrent users should all get gift codes."""
     async with AsyncClient(transport=ASGITransport(app=main.app), base_url="http://test") as ac:
-        tasks = [ac.get("/queue") for _ in range(10)]
+        tasks = [ac.post("/queue") for _ in range(10)]
         responses = await asyncio.gather(*tasks)
 
     for resp in responses:
@@ -69,7 +69,7 @@ async def test_queue_10_users(mock_kafka):
 async def test_queue_100_users(mock_kafka):
     """At capacity: 100 concurrent users should all get gift codes."""
     async with AsyncClient(transport=ASGITransport(app=main.app), base_url="http://test") as ac:
-        tasks = [ac.get("/queue") for _ in range(100)]
+        tasks = [ac.post("/queue") for _ in range(100)]
         responses = await asyncio.gather(*tasks)
 
     success_count = sum(1 for r in responses if r.status_code == 200)
@@ -84,7 +84,7 @@ async def test_queue_100_users(mock_kafka):
 async def test_queue_500_users(mock_kafka):
     """Overload: 500 concurrent users. Only 100 should succeed, 400 should get 429."""
     async with AsyncClient(transport=ASGITransport(app=main.app), base_url="http://test") as ac:
-        tasks = [ac.get("/queue") for _ in range(500)]
+        tasks = [ac.post("/queue") for _ in range(500)]
         responses = await asyncio.gather(*tasks)
 
     success_count = sum(1 for r in responses if r.status_code == 200)
