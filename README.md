@@ -1,110 +1,68 @@
-# 1000x RPS FastAPI Server
+# 1000x RPS FastAPI Server with Kafka Integration
 
-This repository provides a template for building a high-performance FastAPI server capable of handling over 1000 requests per second. It includes configurations and best practices for deploying a production-ready and scalable application.
+This repository provides a high-performance FastAPI server template optimized for asynchronous task processing using **Kafka** and built-in **Rate Limiting**.
 
 ## 🚀 Key Features
 
-- **FastAPI Framework**: Built on the modern, fast (high-performance) web framework for building APIs with Python.
-- **High Performance**: Optimized for a high number of requests per second through a production-ready setup.
-- **Asynchronous by Design**: Leverages Python's `asyncio` to handle concurrent requests efficiently.
-- **Scalable**: Easily scalable using worker processes to take full advantage of multi-core systems.
+- **FastAPI Framework**: Modern, high-performance web framework for Python.
+- **Rate Limiting & Queueing**:
+    - Enforced **100 Requests Per Second (RPS)** limit.
+    - Graceful "waiting" queue for concurrent requests.
+    - Responds with **429** when the rate limit is exceeded.
+- **Kafka Integration**:
+    - Asynchronous task distribution to Kafka.
+    - Request-Response pattern via dedicated `tasks` and `results` topics.
+- **Loguru Logging**: Structured and readable logging for easier debugging.
+- **High Performance**: Designed to handle bursts and distribute load via worker processes.
 
 ## 🏁 Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-
 ### Prerequisites
 
-- [Python 3.11+](https://www.python.org/downloads/)
-- [pip](https://pip.pypa.io/en/stable/installation/)
+- [Python 3.13+](https://www.python.org/downloads/)
+- [Poetry](https://python-poetry.org/)
+- [Apache Kafka](https://kafka.apache.org/) (running on `localhost:9092` by default)
 
 ### Installation
 
 1.  **Clone the repository:**
-    ```sh
+    ```bash
     git clone https://github.com/your-username/1000x-rps-server.git
     cd 1000x-rps-server
     ```
 
-2.  **Create and activate a virtual environment:**
-    ```sh
-    python3 -m venv venv
-    source venv/bin/activate
+2.  **Set up environment variables:**
+    ```bash
+    cp .env.example .env
+    # Edit .env with your configuration
     ```
 
-3.  **Install the dependencies:**
-    ```sh
-    pip install "fastapi[all]" uvicorn gunicorn
+3.  **Install dependencies:**
+    ```bash
+    poetry install
     ```
 
-## 🏃 Running the Application
-
-### Development Server
-
-For development, you can run the server with `uvicorn`, which provides live reloading.
-
-1.  **Create a `main.py` file:**
-    ```python
-    from fastapi import FastAPI
-
-    app = FastAPI()
-
-    @app.get("/")
-    async def read_root():
-        return {"Hello": "World"}
+4.  **Activate virtual environment:**
+    ```bash
+    poetry shell
     ```
 
-2.  **Run the development server:**
-    ```sh
-    uvicorn main:app --reload
-    ```
-    The application will be available at `http://127.0.0.1:8000`.
-
-### Production Server (High-Performance)
-
-For production, it is recommended to use `gunicorn` as a process manager to handle multiple `uvicorn` workers. This setup allows the application to fully utilize multi-core CPUs.
-
-Run the server with `gunicorn` and `uvicorn` workers:
-```sh
-gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8000
+### Docker Mode
+If you have Docker installed, you can start everything (FastAPI + Kafka) with:
+```bash
+docker-compose up --build
 ```
 
-- `-w 4`: Spawns 4 worker processes. A good starting point is `(2 x $NUM_CORES) + 1`.
-- `-k uvicorn.workers.UvicornWorker`: Specifies the worker class to use.
+## ⚡️ Performance & Logic
+...
+## 📋 TODO
+- [ ] **Kafka Worker Implementation**: Create a separate service to consume from the `tasks` topic and produce results to the `results` topic.
+- [x] **Docker Compose**: Add a `docker-compose.yml` to spin up Kafka, Zookeeper, and the FastAPI app together.
+- [ ] **Monitoring**: Integrate Prometheus/Grafana for real-time RPS and Kafka latency tracking.
 
-## 📂 Project Structure
-
-A simple structure for this project could be:
-
-```
-.
-├── venv/
-├── main.py
-└── README.md
-```
-
-- `main.py`: The main application file.
-- `venv/`: The virtual environment directory.
-
-## ⚡️ Performance Testing
-
-To benchmark the server and ensure it meets the 1000+ RPS goal, you can use tools like `wrk` or `locust`.
-
-### Example with `wrk`
-
-```sh
-# Install wrk (e.g., on macOS with `brew install wrk`)
-wrk -t12 -c400 -d30s http://127.0.0.1:8000
-```
-
-- `-t12`: Use 12 threads.
-- `-c400`: Maintain 400 concurrent connections.
-- `-d30s`: Run the test for 30 seconds.
 
 ## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a pull request or open an issue.
+Contributions are welcome! Please submit a PR for any of the TODO items.
 
 ## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+MIT License
