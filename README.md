@@ -22,6 +22,7 @@ This repository provides a high-performance FastAPI server template optimized fo
 - [Python 3.13+](https://www.python.org/downloads/)
 - [Poetry](https://python-poetry.org/)
 - [Apache Kafka](https://kafka.apache.org/) (running on `localhost:9092` by default)
+- [Redis](https://redis.io/) (running on `localhost:6379` by default)
 
 ### Installation
 
@@ -48,16 +49,37 @@ This repository provides a high-performance FastAPI server template optimized fo
     ```
 
 ### Docker Mode
-If you have Docker installed, you can start everything (FastAPI + Kafka) with:
+If you have Docker installed, you can start everything (FastAPI + Kafka + Redis) with:
 ```bash
 docker-compose up --build
+```
+
+## 🧪 Testing
+
+### Unit & Integration Tests
+Run standard tests using pytest:
+```bash
+pytest
+```
+
+### End-to-End (E2E) Reliability Tests
+The E2E tests simulate real-world scenarios with various user loads (10x, 200x, 1000x users) to verify gift code delivery reliability and uniqueness:
+```bash
+pytest tests/test_e2e_gift_code.py -s
+```
+
+### Performance Benchmarks
+Run high-concurrency benchmarks:
+```bash
+pytest tests/test_performance_100x.py -s
 ```
 
 ## ⚡️ Performance & Logic
 ...
 ## 📋 TODO
 - [x] **Kafka Worker Implementation**: Added `kafka_worker.py` to handle background tasks.
-- [x] **Docker Compose**: Add a `docker-compose.yml` to spin up Kafka, Zookeeper, and the FastAPI app together.
+- [x] **Docker Compose**: Add a `docker-compose.yml` to spin up Kafka, Zookeeper, Redis and the FastAPI app together.
+- [x] **E2E Reliability Tests**: Added comprehensive E2E tests for high-load scenarios.
 - [ ] **Monitoring**: Integrate Prometheus/Grafana for real-time RPS and Kafka latency tracking.
 
 

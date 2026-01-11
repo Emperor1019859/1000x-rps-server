@@ -39,6 +39,9 @@
 ## Development Workflow
 *   **Formatters:** Black (120 line length), isort.
 *   **Linting:** Flake8.
+*   **Reliability Tests (E2E):** `pytest tests/test_e2e_gift_code.py -s`
+    *   Verifies 10x, 200x, and 1000x user scenarios.
+    *   Ensures >99% success rate and unique gift code delivery.
 *   **Performance Tests:** `pytest tests/test_performance_100x.py -s`
     *   Saves statistics to `benchmark_stats.json`.
 
