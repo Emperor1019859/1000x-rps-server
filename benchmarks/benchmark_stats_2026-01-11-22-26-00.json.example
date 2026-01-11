@@ -1,0 +1,9 @@
+{
+    "timestamp": "2026-01-11T22:26:00.956064",
+    "total_requests": 2000,
+    "concurrency": 100,
+    "workers": 4,
+    "total_time_seconds": 8.5407,
+    "rps": 234.17,
+    "success_rate": 100.0
+}
