@@ -56,7 +56,7 @@ docker-compose up --build
 ## ⚡️ Performance & Logic
 ...
 ## 📋 TODO
-- [ ] **Kafka Worker Implementation**: Create a separate service to consume from the `tasks` topic and produce results to the `results` topic.
+- [x] **Kafka Worker Implementation**: Added `kafka_worker.py` to handle background tasks.
 - [x] **Docker Compose**: Add a `docker-compose.yml` to spin up Kafka, Zookeeper, and the FastAPI app together.
 - [ ] **Monitoring**: Integrate Prometheus/Grafana for real-time RPS and Kafka latency tracking.
 

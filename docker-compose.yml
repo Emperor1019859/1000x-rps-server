@@ -49,3 +49,16 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  kafka-worker:
+    build: .
+    command: python kafka_worker.py
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
