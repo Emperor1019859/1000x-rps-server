@@ -46,13 +46,13 @@ async def queue() -> dict:
             detail="Server busy, too many in-flight requests. Please try again later.",
         )
 
-    if kafka_manager.producer and kafka_manager.consumer:
-        gift_code = await kafka_manager.get_gift_code(timeout=settings.KAFKA_GIFT_CODE_TIMEOUT)
-        return {"gift_code": gift_code, "request_id": request_id}
-
-    await rate_limiter.release(request_id)
-
-    return {"gift_code": None, "request_id": request_id}
+    try:
+        if kafka_manager.producer and kafka_manager.consumer:
+            gift_code = await kafka_manager.get_gift_code(timeout=settings.KAFKA_GIFT_CODE_TIMEOUT)
+            return {"gift_code": gift_code, "request_id": request_id}
+        return {"gift_code": None, "request_id": request_id}
+    finally:
+        await rate_limiter.release(request_id)
 
 
 if __name__ == "__main__":
