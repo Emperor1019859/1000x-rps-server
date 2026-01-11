@@ -1,0 +1,52 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.whl
+
+# Distributions and packaging
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+wheels/
+share/python-wheels/
+*.egg
+
+# C extensions
+*.so
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.coverage
+.pytest_cache/
+htmlcov/
+.nox/
+
+# Editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+
+# Virtual environment
+venv/
+env/
+/bin
+/include
+/lib
+/lib64
+/pyvenv.cfg
+/share
+/var
+
+# Jupyter Notebook
+.ipynb_checkpoints
