@@ -3,11 +3,16 @@ import json
 import uuid
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
-from fastapi import HTTPException, status
 from loguru import logger
+
+from core.config import settings
 
 
 class KafkaManager:
+    """
+    Simplified Kafka Manager focused on retrieving gift codes.
+    """
+
     def __init__(self, bootstrap_servers: str, tasks_topic: str, results_topic: str):
         self.bootstrap_servers = bootstrap_servers
         self.tasks_topic = tasks_topic
@@ -49,22 +54,23 @@ class KafkaManager:
         except Exception as e:
             logger.error(f"Error in Kafka consumer loop: {e}")
 
-    async def send_task_and_wait(self, payload: dict, timeout: float = 5.0):
+    async def get_gift_code(self, timeout: float = settings.KAFKA_GIFT_CODE_TIMEOUT) -> str | None:
+        """
+        Produces a get_gift_code task and waits for the result.
+        Returns the gift code string or None on failure/timeout.
+        """
         correlation_id = str(uuid.uuid4())
-        payload["correlation_id"] = correlation_id
+        payload = {"action": "get_gift_code", "correlation_id": correlation_id}
 
         future = asyncio.get_running_loop().create_future()
         self.results[correlation_id] = future
 
         try:
+            # Send task
             await self.producer.send_and_wait(self.tasks_topic, json.dumps(payload).encode("utf-8"))
+            # Wait for result from consumer loop
             return await asyncio.wait_for(future, timeout=timeout)
-        except asyncio.TimeoutError:
-            self.results.pop(correlation_id, None)
-            raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Task processing timed out")
         except Exception as e:
             self.results.pop(correlation_id, None)
-            logger.error(f"Kafka error: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error occurred"
-            )
+            logger.warning(f"get_gift_code failed or timed out: {e}")
+            return None

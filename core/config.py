@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     # Kafka Configuration
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    KAFKA_GIFT_CODE_TIMEOUT: float = 10.0
     TASKS_TOPIC: str = "tasks"
     RESULTS_TOPIC: str = "results"
 

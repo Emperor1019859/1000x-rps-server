@@ -1,4 +1,3 @@
-import asyncio
 import uuid
 from contextlib import asynccontextmanager
 
@@ -16,7 +15,6 @@ kafka_manager = KafkaManager(
     tasks_topic=settings.TASKS_TOPIC,
     results_topic=settings.RESULTS_TOPIC,
 )
-waiting_queue = asyncio.Semaphore(settings.MAX_QUEUE_SIZE)
 
 
 @asynccontextmanager
@@ -39,31 +37,22 @@ async def root():
 
 
 @app.get("/queue")
-async def queue():
-    # 1. Generate unique request ID
+async def queue() -> dict:
     request_id = str(uuid.uuid4())
 
-    # 2. Concurrency Check (In-flight requests)
     if not await rate_limiter.validate(request_id):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Server busy, too many in-flight requests. Please try again later.",
         )
 
-    try:
-        # 3. Waiting Queue (Local Semaphore for process safety)
-        async with waiting_queue:
-            # 4. Process via Kafka
-            if kafka_manager.producer and kafka_manager.consumer:
-                result = await kafka_manager.send_task_and_wait({"action": "root_ping"})
-                return {"Hello": "World", "kafka_result": result, "request_id": request_id}
-            else:
-                # Mock behavior for testing if Kafka is missing
-                await asyncio.sleep(0.1)  # Simulate some work
-                return {"Hello": "World", "mode": "mocked (no kafka)", "request_id": request_id}
-    finally:
-        # 5. Always remove from Redis when done (success, failure, or timeout)
-        await rate_limiter.release(request_id)
+    if kafka_manager.producer and kafka_manager.consumer:
+        gift_code = await kafka_manager.get_gift_code(timeout=settings.KAFKA_GIFT_CODE_TIMEOUT)
+        return {"gift_code": gift_code, "request_id": request_id}
+
+    await rate_limiter.release(request_id)
+
+    return {"gift_code": None, "request_id": request_id}
 
 
 if __name__ == "__main__":
