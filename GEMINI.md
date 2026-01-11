@@ -6,11 +6,11 @@
 ## Key Technologies
 *   **Language:** Python (>=3.13, <4.0)
 *   **Web Framework:** FastAPI
-*   **Messaging:** Kafka (via `aioredis` and `aiokafka`)
-*   **Rate Limiting:** Redis-backed Token Bucket implementation in `core/security.py`.
+*   **Messaging:** Kafka (via `aiokafka`)
+*   **Rate Limiting:** Redis-backed Concurrency Limiter using a Set and distributed Lock in `core/security.py`.
 *   **Configuration:** `pydantic-settings` for environment-based configuration in `core/config.py`.
 *   **Logging:** `loguru`
-*   **Storage:** Redis (for distributed rate limiting)
+*   **Storage:** Redis (for distributed concurrency limiting)
 *   **Dependency Manager:** Poetry
 *   **Testing:** `pytest`, `httpx` (includes performance benchmarks)
 
@@ -18,12 +18,12 @@
 *   **Settings Management:** All constants are centralized in `core/config.py` and can be overridden via `.env` file or environment variables.
 *   **Distributed Concurrency Limiting:** Limits **active in-flight requests** to 100 using Redis.
     1. Every request is assigned a `uuid4`.
-    2. The ID is added to a Redis list (`RATE_LIMIT_CAPACITY`) via Lua script.
-    3. If the list size exceeds 100, the server returns `429 Too Many Requests`.
-    4. Upon completion (Kafka response or timeout), the ID is removed from Redis.
-*   **Queueing Logic:** Uses an `asyncio.Semaphore` to manage a "waiting room" for requests before they are dispatched to Kafka.
+    2. The ID is added to a Redis set (`RATE_LIMIT_CAPACITY_SET`) if the set size is below capacity.
+    3. Atomicity is ensured using a Redis-backed distributed lock.
+    4. If capacity is exceeded, the server returns `429 Too Many Requests`.
+    5. Upon completion (Kafka response, timeout, or error), the ID is removed from Redis via a `finally` block in the endpoint.
 *   **Kafka Flow:**
-    1. Request enters `root` endpoint.
+    1. Request enters `queue` endpoint.
     2. Produced to `tasks` topic with a `correlation_id`.
     3. Server subscribes to `results` topic.
     4. Result is matched via `correlation_id` and returned to user.

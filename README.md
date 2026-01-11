@@ -5,10 +5,10 @@ This repository provides a high-performance FastAPI server template optimized fo
 ## 🚀 Key Features
 
 - **FastAPI Framework**: Modern, high-performance web framework for Python.
-- **Rate Limiting & Queueing**:
-    - Enforced **100 Requests Per Second (RPS)** limit.
-    - Graceful "waiting" queue for concurrent requests.
-    - Responds with **429** when the rate limit is exceeded.
+- **Distributed Concurrency Limiting**:
+    - Limits **in-flight requests** (default: 100) using Redis.
+    - Uses Redis Sets and distributed locks for atomic capacity management.
+    - Responds with **429 Too Many Requests** when the capacity is reached.
 - **Kafka Integration**:
     - Asynchronous task distribution to Kafka.
     - Request-Response pattern via dedicated `tasks` and `results` topics.
