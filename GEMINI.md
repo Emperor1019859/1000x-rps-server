@@ -16,7 +16,11 @@
 
 ## Architecture Details
 *   **Settings Management:** All constants are centralized in `core/config.py` and can be overridden via `.env` file or environment variables.
-*   **Distributed Rate Limiting:** Uses a Redis-backed Token Bucket algorithm with Lua scripting to ensure atomic increments and consistency across multiple server instances (default 100 RPS). Exceeding this returns a `429 Too Many Requests`.
+*   **Distributed Concurrency Limiting:** Limits **active in-flight requests** to 100 using Redis.
+    1. Every request is assigned a `uuid4`.
+    2. The ID is added to a Redis list (`RATE_LIMIT_CAPACITY`) via Lua script.
+    3. If the list size exceeds 100, the server returns `429 Too Many Requests`.
+    4. Upon completion (Kafka response or timeout), the ID is removed from Redis.
 *   **Queueing Logic:** Uses an `asyncio.Semaphore` to manage a "waiting room" for requests before they are dispatched to Kafka.
 *   **Kafka Flow:**
     1. Request enters `root` endpoint.
