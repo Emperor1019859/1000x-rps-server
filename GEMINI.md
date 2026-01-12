@@ -56,3 +56,31 @@
     *   `kafka.py`: Kafka producer/consumer management.
 *   `tests/`: Contains test modules (e.g., `test_main.py`, `test_performance_100x.py`).
 *   `pyproject.toml`: Poetry configuration, dependency listing, and tool settings (Black, isort).
+
+## Roadmap: Real-time Benchmark Dashboard
+
+To achieve a real-time dashboard for monitoring CPU, Memory, RPS, and API status codes under various loads (10, 100, 1000 users), the following plan will be executed:
+
+### Phase 1: Instrumentation
+- [ ] **FastAPI Metrics:** Add `prometheus-fastapi-instrumentator` to expose `/metrics` endpoint in `main.py`.
+- [ ] **System Metrics:** Use `cadvisor` or `node_exporter` to expose container CPU/Memory usage.
+
+### Phase 2: Infrastructure (Docker Compose)
+- [ ] **Prometheus:** Add `prometheus` service to scrape metrics from the web server and system exporters.
+- [ ] **Grafana:** Add `grafana` service for visualization.
+- [ ] **cAdvisor:** Add `cadvisor` service to monitor container resource usage.
+
+### Phase 3: Configuration
+- [ ] **Prometheus Config:** Create `prometheus.yml` to define scrape targets (web-server, cadvisor).
+- [ ] **Grafana Provisioning:** Configure Grafana to automatically load Prometheus as a datasource.
+
+### Phase 4: Load Testing
+- [ ] **Locust Setup:** Create `locustfile.py` to simulate realistic user behavior.
+- [ ] **Scenarios:** Define user classes for 10, 100, and 1000 concurrent user tests.
+
+### Phase 5: Visualization
+- [ ] **Dashboard:** Create a Grafana dashboard JSON model to visualize:
+    - **RPS (Throughput):** Rate of requests per second.
+    - **Latency:** P50, P95, P99 response times.
+    - **System Resources:** CPU and Memory usage % (via cAdvisor).
+    - **Status Codes:** Breakdown of 2xx, 4xx, 5xx responses.
