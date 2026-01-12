@@ -8,7 +8,10 @@ requires-python = ">=3.13,<4.0"
 dependencies = [
     "fastapi (>=0.128.0,<0.129.0)",
     "uvicorn (>=0.40.0,<0.41.0)",
-    "loguru (>=0.7.3,<0.8.0)"
+    "loguru (>=0.7.3,<0.8.0)",
+    "aiokafka (>=0.13.0,<0.14.0)",
+    "pydantic-settings (>=2.12.0,<3.0.0)",
+    "redis (>=7.1.0,<8.0.0)"
 ]
 
 [tool.poetry]
@@ -26,6 +29,7 @@ dev = [
     "black (>=25.12.0,<26.0.0)",
     "flake8 (>=7.3.0,<8.0.0)",
     "isort (>=7.0.0,<8.0.0)",
+    "pytest-asyncio (>=1.3.0,<2.0.0)",
 ]
 
 [tool.black]
