@@ -54,6 +54,29 @@ If you have Docker installed, you can start everything (FastAPI + Kafka + Redis)
 docker-compose up --build
 ```
 
+## 📊 Benchmarks & Monitoring
+
+### Automated Benchmark Suite
+We provide an automated script to simulate 10, 100, and 1000 concurrent users using Locust.
+```bash
+python benchmarks/run_benchmark.py
+```
+This script runs three scenarios:
+1. **10 Users (Warmup)**: Baseline performance.
+2. **100 Users (Load)**: Tests the system at its rated capacity.
+3. **1000 Users (Stress)**: Verifies that the rate limiter correctly issues `429 Too Many Requests` beyond the 100-request limit.
+
+Results are saved as CSV files in the `benchmarks/` directory.
+
+### Real-time Dashboard
+A complete monitoring stack is included in the Docker Compose setup:
+- **Prometheus**: Collects metrics from the web server and cAdvisor.
+- **Grafana**: Visualizes metrics (RPS, Latency, Status Codes, CPU/Memory).
+    - URL: [http://localhost:3000](http://localhost:3000) (Login: `admin` / `admin`)
+- **cAdvisor**: Monitors container resource usage.
+
+> **Note for macOS Users:** Due to limitations in Docker Desktop for macOS, cAdvisor may not display CPU and Memory usage for specific containers. In such cases, use `docker stats` for local resource monitoring.
+
 ## 🧪 Testing
 
 ### Unit & Integration Tests

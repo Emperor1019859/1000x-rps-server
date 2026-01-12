@@ -45,42 +45,24 @@
 *   **Performance Tests:** `pytest tests/test_performance_100x.py -s`
     *   Saves statistics to `benchmark_stats.json`.
 
+## Monitoring & Benchmarking
+The project includes a full-featured monitoring stack and automated benchmark suite.
+
+*   **Prometheus & Grafana:** Pre-configured with a "RPS Performance Dashboard".
+*   **cAdvisor:** Container resource monitoring.
+*   **Locust:** Load testing tool.
+*   **Automated Suite:** `benchmarks/run_benchmark.py` for standard 10/100/1000 user scenarios.
+
 ## Directory Structure
 *   `main.py`: Application entry point and app definition.
 *   `.env.example`: Template for environment variables.
 *   `Dockerfile`: Container definition.
-*   `docker-compose.yml`: Orchestration for web-server, Kafka, and Redis.
+*   `docker-compose.yml`: Orchestration for web-server, Kafka, Redis, and Monitoring.
+*   `benchmarks/`: Automated benchmark scripts and CSV results.
+*   `monitoring/`: Configuration for Prometheus and Grafana.
 *   `core/`: Core application logic.
     *   `config.py`: Settings & .env loading.
     *   `security.py`: Rate limiting logic.
     *   `kafka.py`: Kafka producer/consumer management.
 *   `tests/`: Contains test modules (e.g., `test_main.py`, `test_performance_100x.py`).
 *   `pyproject.toml`: Poetry configuration, dependency listing, and tool settings (Black, isort).
-
-## Roadmap: Real-time Benchmark Dashboard
-
-To achieve a real-time dashboard for monitoring CPU, Memory, RPS, and API status codes under various loads (10, 100, 1000 users), the following plan will be executed:
-
-### Phase 1: Instrumentation
-- [x] **FastAPI Metrics:** Add `prometheus-fastapi-instrumentator` to expose `/metrics` endpoint in `main.py`.
-- [x] **System Metrics:** Use `cadvisor` or `node_exporter` to expose container CPU/Memory usage.
-
-### Phase 2: Infrastructure (Docker Compose)
-- [x] **Prometheus:** Add `prometheus` service to scrape metrics from the web server and system exporters.
-- [x] **Grafana:** Add `grafana` service for visualization.
-- [x] **cAdvisor:** Add `cadvisor` service to monitor container resource usage.
-
-### Phase 3: Configuration
-- [x] **Prometheus Config:** Create `prometheus.yml` to define scrape targets (web-server, cadvisor).
-- [x] **Grafana Provisioning:** Configure Grafana to automatically load Prometheus as a datasource and dashboard.
-
-### Phase 4: Load Testing
-- [x] **Locust Setup:** Create `locustfile.py` to simulate realistic user behavior.
-- [x] **Scenarios:** Define user classes for 10, 100, and 1000 concurrent user tests.
-
-### Phase 5: Visualization
-- [x] **Dashboard:** Create a Grafana dashboard JSON model to visualize:
-    - **RPS (Throughput):** Rate of requests per second.
-    - **Latency:** P50, P95, P99 response times (Available in Grafana).
-    - **System Resources:** CPU and Memory usage % (via cAdvisor).
-    - **Status Codes:** Breakdown of 2xx, 4xx, 5xx responses.
