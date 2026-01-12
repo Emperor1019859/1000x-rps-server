@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, status
 from loguru import logger
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from core.config import settings
 from core.kafka import KafkaManager
@@ -29,6 +30,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# Initialize Prometheus instrumentation
+Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/")

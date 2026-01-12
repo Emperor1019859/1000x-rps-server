@@ -62,25 +62,25 @@
 To achieve a real-time dashboard for monitoring CPU, Memory, RPS, and API status codes under various loads (10, 100, 1000 users), the following plan will be executed:
 
 ### Phase 1: Instrumentation
-- [ ] **FastAPI Metrics:** Add `prometheus-fastapi-instrumentator` to expose `/metrics` endpoint in `main.py`.
-- [ ] **System Metrics:** Use `cadvisor` or `node_exporter` to expose container CPU/Memory usage.
+- [x] **FastAPI Metrics:** Add `prometheus-fastapi-instrumentator` to expose `/metrics` endpoint in `main.py`.
+- [x] **System Metrics:** Use `cadvisor` or `node_exporter` to expose container CPU/Memory usage.
 
 ### Phase 2: Infrastructure (Docker Compose)
-- [ ] **Prometheus:** Add `prometheus` service to scrape metrics from the web server and system exporters.
-- [ ] **Grafana:** Add `grafana` service for visualization.
-- [ ] **cAdvisor:** Add `cadvisor` service to monitor container resource usage.
+- [x] **Prometheus:** Add `prometheus` service to scrape metrics from the web server and system exporters.
+- [x] **Grafana:** Add `grafana` service for visualization.
+- [x] **cAdvisor:** Add `cadvisor` service to monitor container resource usage.
 
 ### Phase 3: Configuration
-- [ ] **Prometheus Config:** Create `prometheus.yml` to define scrape targets (web-server, cadvisor).
-- [ ] **Grafana Provisioning:** Configure Grafana to automatically load Prometheus as a datasource.
+- [x] **Prometheus Config:** Create `prometheus.yml` to define scrape targets (web-server, cadvisor).
+- [x] **Grafana Provisioning:** Configure Grafana to automatically load Prometheus as a datasource and dashboard.
 
 ### Phase 4: Load Testing
-- [ ] **Locust Setup:** Create `locustfile.py` to simulate realistic user behavior.
-- [ ] **Scenarios:** Define user classes for 10, 100, and 1000 concurrent user tests.
+- [x] **Locust Setup:** Create `locustfile.py` to simulate realistic user behavior.
+- [x] **Scenarios:** Define user classes for 10, 100, and 1000 concurrent user tests.
 
 ### Phase 5: Visualization
-- [ ] **Dashboard:** Create a Grafana dashboard JSON model to visualize:
+- [x] **Dashboard:** Create a Grafana dashboard JSON model to visualize:
     - **RPS (Throughput):** Rate of requests per second.
-    - **Latency:** P50, P95, P99 response times.
+    - **Latency:** P50, P95, P99 response times (Available in Grafana).
     - **System Resources:** CPU and Memory usage % (via cAdvisor).
     - **Status Codes:** Breakdown of 2xx, 4xx, 5xx responses.

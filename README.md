@@ -80,12 +80,12 @@ pytest tests/test_performance_100x.py -s
 - [x] **Kafka Worker Implementation**: Added `kafka_worker.py` to handle background tasks.
 - [x] **Docker Compose**: Add a `docker-compose.yml` to spin up Kafka, Zookeeper, Redis and the FastAPI app together.
 - [x] **E2E Reliability Tests**: Added comprehensive E2E tests for high-load scenarios.
-- [ ] **Real-time Benchmark Dashboard**:
-    - [ ] **Step 1:** Instrument FastAPI with `prometheus-fastapi-instrumentator`.
-    - [ ] **Step 2:** Add Prometheus, Grafana, and cAdvisor to `docker-compose.yml`.
-    - [ ] **Step 3:** Configure Prometheus (`prometheus.yml`) and Grafana datasources.
-    - [ ] **Step 4:** Create `locustfile.py` for 10, 100, 1000 user load simulation.
-    - [ ] **Step 5:** Build Grafana Dashboard for CPU, Memory, RPS, and Status Codes.
+- [x] **Real-time Benchmark Dashboard**:
+    - [x] **Step 1:** Instrument FastAPI with `prometheus-fastapi-instrumentator`.
+    - [x] **Step 2:** Add Prometheus, Grafana, and cAdvisor to `docker-compose.yml`.
+    - [x] **Step 3:** Configure Prometheus (`prometheus.yml`) and Grafana datasources/dashboards.
+    - [x] **Step 4:** Create `locustfile.py` for 10, 100, 1000 user load simulation.
+    - [x] **Step 5:** Build Grafana Dashboard for CPU, Memory, RPS, and Status Codes.
 
 
 ## 🤝 Contributing
