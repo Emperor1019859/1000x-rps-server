@@ -12,7 +12,6 @@ from core.config import settings
 async def process_task(data):
     """
     THIS IS WHERE THE 'GIFT LOGIC' LIVES.
-    In a real app, this might check a database or call a 3rd party API.
     """
     action = data.get("action")
 
@@ -35,36 +34,48 @@ async def run_worker():
 
     logger.info("Worker is ready and listening for tasks...")
 
-    try:
-        async for msg in consumer:
+    # Limit concurrency to avoid OOM
+    semaphore = asyncio.Semaphore(settings.WORKER_CONCURRENCY)
+
+    async def handle_message(msg):
+        async with semaphore:
             try:
                 task_data = json.loads(msg.value.decode())
                 correlation_id = task_data.get("correlation_id")
 
-                logger.info(f"Processing task {correlation_id}...")
+                # logger.debug(f"Processing task {correlation_id}...") # Too verbose for high RPS
 
-                # Execute the gift logic
                 result_code = await process_task(task_data)
 
-                # Send the result back
                 response_payload = {"correlation_id": correlation_id, "result": result_code}
-                await producer.send_and_wait(settings.RESULTS_TOPIC, json.dumps(response_payload).encode())
-                logger.info(f"Result sent for {correlation_id}")
+
+                # Non-blocking send
+                await producer.send(settings.RESULTS_TOPIC, json.dumps(response_payload).encode())
+                # logger.debug(f"Result sent for {correlation_id}")
 
             except Exception as e:
                 logger.error(f"Failed to process message: {e}")
+
+    try:
+        async for msg in consumer:
+            asyncio.create_task(handle_message(msg))
+
     finally:
         await consumer.stop()
         await producer.stop()
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     # Handle graceful shutdown
     for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, lambda: asyncio.create_task(loop.stop()))
+        loop.add_signal_handler(sig, lambda: asyncio.create_task(loop.stop()))  # This might need better cleanup in loop
 
     try:
         loop.run_until_complete(run_worker())
     except Exception as e:
         logger.error(f"Worker crashed: {e}")
+    finally:
+        loop.close()
