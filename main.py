@@ -44,7 +44,7 @@ async def root():
 async def queue() -> dict:
     request_id = str(uuid.uuid4())
 
-    if not await rate_limiter.validate(request_id):
+    if not await rate_limiter.validate():
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Server busy, too many in-flight requests. Please try again later.",
@@ -56,7 +56,7 @@ async def queue() -> dict:
             return {"gift_code": gift_code, "request_id": request_id}
         return {"gift_code": None, "request_id": request_id}
     finally:
-        await rate_limiter.release(request_id)
+        await rate_limiter.release()
 
 
 if __name__ == "__main__":
