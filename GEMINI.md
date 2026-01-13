@@ -21,6 +21,10 @@
     2.  Atomicity is guaranteed on the Redis server side, eliminating network RTT for locking.
     3.  If capacity is exceeded, the server returns `429 Too Many Requests`.
     4.  Upon completion, the counter is decremented via another Lua script in a `finally` block.
+*   **Process Management (v3):** Uses **Gunicorn** as a process manager with 4 **Uvicorn workers**.
+    *   Optimizes CPU utilization on multi-core systems.
+    *   Significantly reduces tail latency under stress (v3: ~50ms vs v2: ~99ms at 1000 users).
+    *   Provides better process stability and request distribution.
 *   **Kafka Flow:**
     1.  Request enters `POST /queue` endpoint.
     2.  Produced to `tasks` topic with a `correlation_id`.

@@ -56,22 +56,19 @@ docker-compose up --build
 
 ## 📊 Benchmarks & Monitoring
 
-### Performance Improvements (v1 vs v2)
+### Performance Improvements (v1 vs v2 vs v3)
 Recent optimizations have yielded significant improvements in throughput and latency, particularly under heavy load.
 
-| Scenario | Metric | v1 | v2 | Improvement |
-| :--- | :--- | :--- | :--- | :--- |
-| **100 Users** | Avg Latency | ~39 ms | **~3 ms** | **92% reduction** |
-| | RPS | ~273 | **~304** | **11% increase** |
-| **1000 Users** | Avg Latency | ~1511 ms | **~99 ms** | **93% reduction** |
-| | RPS | ~492 | **~2318** | **4.7x increase** |
+| Scenario | Metric | v1 | v2 | v3 | Improvement (v3 vs v1) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **100 Users** | Avg Latency | ~39 ms | ~3 ms | **~3.8 ms** | **90% reduction** |
+| | RPS | ~273 | ~304 | **~305** | **12% increase** |
+| **1000 Users** | Avg Latency | ~1511 ms | ~99 ms | **~50 ms** | **97% reduction** |
+| | RPS | ~492 | ~2318 | **~2700** | **5.5x increase** |
 
 > **Optimization Root Cause:**
-> The transition from **v1** to **v2** involved replacing the standard Redis concurrency logic with **Atomic Lua Scripts**.
-> By executing the *check-and-increment* logic directly on the Redis server:
-> 1.  **Network Overhead:** Drastically reduced round-trips (RTT).
-> 2.  **Atomicity:** Guaranteed without complex client-side locking.
-> 3.  **Contention:** Minimized locking overhead under high concurrency.
+> *   **v1 -> v2 (Lua Scripts):** Replaced standard Redis concurrency logic with **Atomic Lua Scripts**, reducing network overhead and locking contention.
+> *   **v2 -> v3 (Gunicorn + Workers):** Switched from a single Uvicorn process to **Gunicorn managing 4 Uvicorn workers**. This allows the application to utilize multiple CPU cores effectively, stabilizing latency under high concurrency and further increasing throughput.
 
 ### Automated Benchmark Suite
 We provide an automated script to simulate 10, 100, and 1000 concurrent users using Locust.
