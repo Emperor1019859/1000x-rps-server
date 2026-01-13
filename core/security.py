@@ -4,44 +4,63 @@ from redis import asyncio as aioredis
 
 class RateLimiter:
     """
-    Redis-backed Concurrency Limiter using a Set for O(1) operations.
-    Protected by a distributed lock to ensure atomic capacity checks.
+    Redis-backed Concurrency Limiter using a simple counter and Lua scripts for atomicity.
     """
 
-    def __init__(self, redis_url: str, capacity: int, timeout: float = 5.0):
+    def __init__(self, redis_url: str, capacity: int):
         self.redis = aioredis.from_url(redis_url, decode_responses=True)
         self.capacity = capacity
-        self.timeout = timeout
-        self.key = "RATE_LIMIT_CAPACITY_SET"
-        self.lock_name = "RATE_LIMIT_LOCK"
+        self.key = "RATE_LIMIT_COUNTER"
 
-    async def validate(self, request_id: str) -> bool:
+        # Lua script to atomically check and increment
+        # Returns 1 if successful (acquired), 0 if capacity exceeded
+        self._validate_script = self.redis.register_script(
+            """
+            local key = KEYS[1]
+            local capacity = tonumber(ARGV[1])
+            local current = tonumber(redis.call('get', key) or "0")
+            if current < capacity then
+                redis.call('incr', key)
+                return 1
+            else
+                return 0
+            end
+            """
+        )
+
+        # Lua script to safely decrement
+        self._release_script = self.redis.register_script(
+            """
+            local key = KEYS[1]
+            local current = tonumber(redis.call('get', key) or "0")
+            if current > 0 then
+                redis.call('decr', key)
+                return 1
+            else
+                return 0
+            end
+            """
+        )
+
+    async def validate(self) -> bool:
         """
         Check if a new request can be accepted.
         """
-        lock = self.redis.lock(self.lock_name, timeout=self.timeout, blocking_timeout=self.timeout)
         try:
-            if await lock.acquire():
-                try:
-                    current_count = await self.redis.scard(self.key)
-                    if current_count < self.capacity:
-                        await self.redis.sadd(self.key, request_id)
-                        return True
-                    return False
-                finally:
-                    await lock.release()
-            else:
-                logger.debug(f"Lock {self.lock_name} acquisition timed out for {request_id}")
-                return False
+            result = await self._validate_script(keys=[self.key], args=[self.capacity])
+            return bool(result)
         except Exception as e:
-            logger.error(f"RateLimiter acquisition error: {e}")
+            logger.error(f"RateLimiter validation error: {e}")
+            # Fail closed or open? Standard practice for rate limiting is often fail open (allow),
+            # but for concurrency limit to protect system, fail closed (deny) might be safer.
+            # Original code returned False on error.
             return False
 
-    async def release(self, request_id: str):
+    async def release(self):
         """
-        Removes the request_id from the set in O(1) time.
+        Decrements the concurrency counter.
         """
         try:
-            await self.redis.srem(self.key, request_id)
+            await self._release_script(keys=[self.key])
         except Exception as e:
-            logger.error(f"RateLimiter release error for {request_id}: {e}")
+            logger.error(f"RateLimiter release error: {e}")

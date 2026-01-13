@@ -52,10 +52,11 @@ def mock_kafka():
 
 
 @pytest.mark.asyncio
-async def test_queue_10_users(mock_kafka):
-    """Happy flow: 10 concurrent users should all get gift codes."""
+async def test_queue_small_batch(mock_kafka):
+    """Happy flow: A small number of concurrent users should all get gift codes."""
+    num_users = min(10, settings.RATE_LIMIT_CAPACITY)
     async with AsyncClient(transport=ASGITransport(app=main.app), base_url="http://test") as ac:
-        tasks = [ac.post("/queue") for _ in range(10)]
+        tasks = [ac.post("/queue") for _ in range(num_users)]
         responses = await asyncio.gather(*tasks)
 
     for resp in responses:
@@ -66,14 +67,15 @@ async def test_queue_10_users(mock_kafka):
 
 
 @pytest.mark.asyncio
-async def test_queue_100_users(mock_kafka):
-    """At capacity: 100 concurrent users should all get gift codes."""
+async def test_queue_at_capacity(mock_kafka):
+    """At capacity: users up to RATE_LIMIT_CAPACITY should all get gift codes."""
+    num_users = settings.RATE_LIMIT_CAPACITY
     async with AsyncClient(transport=ASGITransport(app=main.app), base_url="http://test") as ac:
-        tasks = [ac.post("/queue") for _ in range(100)]
+        tasks = [ac.post("/queue") for _ in range(num_users)]
         responses = await asyncio.gather(*tasks)
 
     success_count = sum(1 for r in responses if r.status_code == 200)
-    assert success_count == 100
+    assert success_count == num_users
 
     for resp in responses:
         if resp.status_code == 200:
@@ -81,10 +83,12 @@ async def test_queue_100_users(mock_kafka):
 
 
 @pytest.mark.asyncio
-async def test_queue_500_users(mock_kafka):
-    """Overload: 500 concurrent users. Only 100 should succeed, 400 should get 429."""
+async def test_queue_overload(mock_kafka):
+    """Overload: More users than RATE_LIMIT_CAPACITY. Only RATE_LIMIT_CAPACITY should succeed."""
+    capacity = settings.RATE_LIMIT_CAPACITY
+    num_users = capacity * 5
     async with AsyncClient(transport=ASGITransport(app=main.app), base_url="http://test") as ac:
-        tasks = [ac.post("/queue") for _ in range(500)]
+        tasks = [ac.post("/queue") for _ in range(num_users)]
         responses = await asyncio.gather(*tasks)
 
     success_count = sum(1 for r in responses if r.status_code == 200)
@@ -92,7 +96,6 @@ async def test_queue_500_users(mock_kafka):
 
     print(f"Success: {success_count}, Rate Limited: {rate_limited_count}")
 
-    # Given the capacity is 100 and we have a 0.01s sleep in the mock,
-    # 500 simultaneous requests should hit the limit correctly.
-    assert success_count == 100
-    assert rate_limited_count == 400
+    # Given the capacity is settings.RATE_LIMIT_CAPACITY
+    assert success_count == capacity
+    assert rate_limited_count == num_users - capacity
