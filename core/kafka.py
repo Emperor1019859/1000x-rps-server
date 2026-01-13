@@ -26,12 +26,18 @@ class KafkaManager:
         self.producer = AIOKafkaProducer(bootstrap_servers=self.bootstrap_servers)
         await self.producer.start()
 
+        # Unique group_id for each instance to ensure all workers receive all messages
+        # and can filter for their own correlation_ids.
+        unique_group_id = f"rps-server-results-{uuid.uuid4().hex[:8]}"
         self.consumer = AIOKafkaConsumer(
-            self.results_topic, bootstrap_servers=self.bootstrap_servers, group_id="rps-server-results"
+            self.results_topic,
+            bootstrap_servers=self.bootstrap_servers,
+            group_id=unique_group_id,
+            auto_offset_reset="latest",
         )
         await self.consumer.start()
         self._consume_task = asyncio.create_task(self._consume_results())
-        logger.info("Kafka Producer and Consumer started")
+        logger.info(f"Kafka Producer and Consumer started with group_id: {unique_group_id}")
 
     async def stop(self):
         if self._consume_task:

@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     PORT: int = 8000
     HOST: str = "0.0.0.0"
     WORKERS: int = 4
+    GUNICORN_LOG_LEVEL: str = "info"
+    GUNICORN_KEEPALIVE: int = 120
 
     # Benchmark Configuration
     BENCHMARK_PORT: int = 8001

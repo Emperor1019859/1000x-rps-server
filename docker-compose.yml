@@ -24,6 +24,7 @@ services:
 
   web-server:
     build: .
+    command: gunicorn main:app --workers ${WORKERS:-4} --worker-class uvicorn.workers.UvicornWorker --bind ${HOST:-0.0.0.0}:${PORT:-8000} --log-level ${GUNICORN_LOG_LEVEL:-info} --keep-alive ${GUNICORN_KEEPALIVE:-120}
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
     volumes:

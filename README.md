@@ -118,3 +118,8 @@ pytest tests/test_e2e_gift_code.py -s
     - [x] **Step 3:** Configure Prometheus (`prometheus.yml`) and Grafana datasources/dashboards.
     - [x] **Step 4:** Create `locustfile.py` for 10, 100, 1000 user load simulation.
     - [x] **Step 5:** Build Grafana Dashboard for CPU, Memory, RPS, and Status Codes.
+- [x] **Production-Grade Server (Gunicorn)**:
+    - [x] Add `gunicorn` dependency.
+    - [x] Integrate Gunicorn settings into `core/config.py`.
+    - [x] Update `docker-compose.yml` to use Gunicorn with Uvicorn workers.
+    - [x] Verify multi-worker performance and stability.
