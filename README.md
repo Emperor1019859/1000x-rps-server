@@ -56,6 +56,16 @@ docker-compose up --build
 
 ## 📊 Benchmarks & Monitoring
 
+### Performance Improvements (v1 vs v2)
+Recent optimizations have yielded significant improvements in throughput and latency, particularly under heavy load.
+
+| Scenario | Metric | v1 | v2 | Improvement |
+| :--- | :--- | :--- | :--- | :--- |
+| **100 Users** | Avg Latency | ~39 ms | **~3 ms** | **92% reduction** |
+| | RPS | ~273 | **~304** | **11% increase** |
+| **1000 Users** | Avg Latency | ~1511 ms | **~99 ms** | **93% reduction** |
+| | RPS | ~492 | **~2318** | **4.7x increase** |
+
 ### Automated Benchmark Suite
 We provide an automated script to simulate 10, 100, and 1000 concurrent users using Locust.
 ```bash
@@ -91,14 +101,6 @@ The E2E tests simulate real-world scenarios with various user loads (10x, 200x, 
 pytest tests/test_e2e_gift_code.py -s
 ```
 
-### Performance Benchmarks
-Run high-concurrency benchmarks:
-```bash
-pytest tests/test_performance_100x.py -s
-```
-
-## ⚡️ Performance & Logic
-...
 ## 📋 TODO
 - [x] **Kafka Worker Implementation**: Added `kafka_worker.py` to handle background tasks.
 - [x] **Docker Compose**: Add a `docker-compose.yml` to spin up Kafka, Zookeeper, Redis and the FastAPI app together.
