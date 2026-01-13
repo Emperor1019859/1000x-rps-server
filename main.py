@@ -60,6 +60,30 @@ async def queue() -> dict:
 
 
 if __name__ == "__main__":
-    from uvicorn import run
+    from gunicorn.app.base import BaseApplication
 
-    run("main:app", host=settings.HOST, port=settings.PORT, reload=True)
+    class StandaloneApplication(BaseApplication):
+        def __init__(self, app, options=None):
+            self.application = app
+            self.options = options or {}
+            super().__init__()
+
+        def load_config(self):
+            config = {
+                key: value for key, value in self.options.items() if key in self.cfg.settings and value is not None
+            }
+            for key, value in config.items():
+                self.cfg.set(key.lower(), value)
+
+        def load(self):
+            return self.application
+
+    options = {
+        "bind": f"{settings.HOST}:{settings.PORT}",
+        "workers": settings.WORKERS,
+        "worker_class": "uvicorn.workers.UvicornWorker",
+        "loglevel": settings.GUNICORN_LOG_LEVEL,
+        "keepalive": settings.GUNICORN_KEEPALIVE,
+        "reload": True,
+    }
+    StandaloneApplication(app, options).run()
