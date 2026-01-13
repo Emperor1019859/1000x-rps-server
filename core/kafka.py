@@ -72,8 +72,8 @@ class KafkaManager:
         self.results[correlation_id] = future
 
         try:
-            # Send task
-            await self.producer.send_and_wait(self.tasks_topic, json.dumps(payload).encode("utf-8"))
+            # Send task (fire and forget / non-blocking)
+            await self.producer.send(self.tasks_topic, json.dumps(payload).encode("utf-8"))
             # Wait for result from consumer loop
             return await asyncio.wait_for(future, timeout=timeout)
         except Exception as e:

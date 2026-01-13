@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     # Rate Limiting Configuration
     RATE_LIMIT_CAPACITY: int = 100
     MAX_QUEUE_SIZE: int = 500
+    WORKER_CONCURRENCY: int = 1000
 
     # Server Configuration (for tests/main)
     PORT: int = 8000
