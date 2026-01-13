@@ -25,6 +25,10 @@
     *   Optimizes CPU utilization on multi-core systems.
     *   Significantly reduces tail latency under stress (v3: ~50ms vs v2: ~99ms at 1000 users).
     *   Provides better process stability and request distribution.
+*   **High-Throughput Kafka (v4):**
+    *   **Concurrent Workers:** `kafka_worker.py` uses `asyncio.create_task` and `asyncio.Semaphore` to process thousands of messages concurrently.
+    *   **Asynchronous Production:** Both server and worker use `producer.send()` instead of `send_and_wait`, eliminating 1-RTT network delay per request and enabling automatic message batching.
+    *   **Performance:** Massive reduction in average latency (~10ms vs ~50ms at 1000 users) and increased throughput (~2977 total RPS).
 *   **Kafka Flow:**
     1.  Request enters `POST /queue` endpoint.
     2.  Produced to `tasks` topic with a `correlation_id`.

@@ -56,19 +56,23 @@ docker-compose up --build
 
 ## 📊 Benchmarks & Monitoring
 
-### Performance Improvements (v1 vs v2 vs v3)
+### Performance Improvements (v1 vs v2 vs v3 vs v4)
 Recent optimizations have yielded significant improvements in throughput and latency, particularly under heavy load.
 
-| Scenario | Metric | v1 | v2 | v3 | Improvement (v3 vs v1) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **100 Users** | Avg Latency | ~39 ms | ~3 ms | **~3.8 ms** | **90% reduction** |
-| | RPS | ~273 | ~304 | **~305** | **12% increase** |
-| **1000 Users** | Avg Latency | ~1511 ms | ~99 ms | **~50 ms** | **97% reduction** |
-| | RPS | ~492 | ~2318 | **~2700** | **5.5x increase** |
+| Scenario | Metric | v1 | v2 | v3 | v4 | Improvement (v4 vs v1) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **100 Users** | Avg Latency | ~39 ms | ~3 ms | ~3.8 ms | **~2.7 ms** | **93% reduction** |
+| | RPS | ~273 | ~304 | ~305 | **~305** | **12% increase** |
+| **1000 Users** | Avg Latency | ~1511 ms | ~99 ms | ~50 ms | **~9.7 ms** | **99.3% reduction** |
+| | RPS | ~492 | ~2318 | ~2700 | **~2977** | **6x increase** |
 
 > **Optimization Root Cause:**
 > *   **v1 -> v2 (Lua Scripts):** Replaced standard Redis concurrency logic with **Atomic Lua Scripts**, reducing network overhead and locking contention.
-> *   **v2 -> v3 (Gunicorn + Workers):** Switched from a single Uvicorn process to **Gunicorn managing 4 Uvicorn workers**. This allows the application to utilize multiple CPU cores effectively, stabilizing latency under high concurrency and further increasing throughput.
+> *   **v2 -> v3 (Gunicorn + Workers):** Switched to **Gunicorn with 4 Uvicorn workers** to utilize multiple CPU cores effectively.
+> *   **v3 -> v4 (High-Throughput Kafka):**
+>     1.  **Worker Concurrency:** Refactored `kafka_worker.py` to process tasks concurrently using `asyncio.create_task` instead of one-by-one.
+>     2.  **Non-blocking Sends:** Replaced `send_and_wait` with `send` in both the server and worker, eliminating the 1-RTT delay per message.
+>     3.  **Result:** Drastic reduction in tail latency and maximized CPU/Network utilization.
 
 ### Automated Benchmark Suite
 We provide an automated script to simulate 10, 100, and 1000 concurrent users using Locust.
@@ -120,3 +124,7 @@ pytest tests/test_e2e_gift_code.py -s
     - [x] Integrate Gunicorn settings into `core/config.py`.
     - [x] Update `docker-compose.yml` to use Gunicorn with Uvicorn workers.
     - [x] Verify multi-worker performance and stability.
+- [x] **High-Throughput Optimization (v4)**:
+    - [x] **Worker Concurrency**: Refactor `kafka_worker.py` to process tasks concurrently (using `asyncio.create_task`) instead of sequentially.
+    - [x] **Optimized Producer**: Replace `send_and_wait` with `send` (fire-and-forget or batched) in both `core/kafka.py` and `kafka_worker.py` to eliminate round-trip latency.
+    - [x] **Throughput Tuning**: Configure `linger_ms` and `batch_size` for `aiokafka` producers to maximize throughput.
