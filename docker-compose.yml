@@ -24,6 +24,9 @@ services:
 
   web-server:
     build: .
+    command: >
+      sh -c "rm -rf /tmp/prometheus_multiproc && mkdir -p /tmp/prometheus_multiproc &&
+      gunicorn main:app --workers ${WORKERS:-4} --worker-class uvicorn.workers.UvicornWorker --bind ${HOST:-0.0.0.0}:${PORT:-8000} --log-level ${GUNICORN_LOG_LEVEL:-info} --keep-alive ${GUNICORN_KEEPALIVE:-120}"
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
     volumes:
@@ -33,6 +36,7 @@ services:
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS_INTERNAL:-kafka:9092}
       - REDIS_URL=${REDIS_URL_INTERNAL:-redis://redis:6379/0}
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
     depends_on:
       kafka:
         condition: service_healthy

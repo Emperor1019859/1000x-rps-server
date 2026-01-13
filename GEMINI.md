@@ -17,33 +17,36 @@
 ## Architecture Details
 *   **Settings Management:** All constants are centralized in `core/config.py` and can be overridden via `.env` file or environment variables.
 *   **Distributed Concurrency Limiting:** Limits **active in-flight requests** to 100 using Redis.
-    1. Every request is assigned a `uuid4`.
-    2. The ID is added to a Redis set (`RATE_LIMIT_CAPACITY_SET`) if the set size is below capacity.
-    3. Atomicity is ensured using a Redis-backed distributed lock.
-    4. If capacity is exceeded, the server returns `429 Too Many Requests`.
-    5. Upon completion (Kafka response, timeout, or error), the ID is removed from Redis via a `finally` block in the endpoint.
+    1.  Uses an **Atomic Lua Script** for high-performance concurrency management.
+    2.  Atomicity is guaranteed on the Redis server side, eliminating network RTT for locking.
+    3.  If capacity is exceeded, the server returns `429 Too Many Requests`.
+    4.  Upon completion, the counter is decremented via another Lua script in a `finally` block.
+*   **Process Management (v3):** Uses **Gunicorn** as a process manager with 4 **Uvicorn workers**.
+    *   Optimizes CPU utilization on multi-core systems.
+    *   Significantly reduces tail latency under stress (v3: ~50ms vs v2: ~99ms at 1000 users).
+    *   Provides better process stability and request distribution.
 *   **Kafka Flow:**
-    1. Request enters `POST /queue` endpoint.
-    2. Produced to `tasks` topic with a `correlation_id`.
-    3. Server subscribes to `results` topic.
-    4. Result is matched via `correlation_id` and returned to user.
+    1.  Request enters `POST /queue` endpoint.
+    2.  Produced to `tasks` topic with a `correlation_id`.
+    3.  Server subscribes to `results` topic using a **unique group_id per instance** (to support multi-worker/multi-node deployments).
+    4.  Result is matched via `correlation_id` and returned to user.
 
 ## Setup and Installation
 1.  **Install Dependencies:** `poetry install`
-2.  **Environment:** Ensure a Kafka broker is running at `localhost:9092`.
+2.  **Environment:** Ensure a Kafka broker is running at `localhost:9092` and Redis at `localhost:6379`.
 
 ## Running the Application
 *   **Development:** `poetry run python main.py`
-*   **Production:** `gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000`
+*   **Production:** `gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --keep-alive 120`
 
 ## Development Workflow
 *   **Formatters:** Black (120 line length), isort.
 *   **Linting:** Flake8.
-*   **Reliability Tests (E2E):** `pytest tests/test_e2e_gift_code.py -s`
+*   **Reliability Tests (E2E):** `pytest tests/test_e2e_gift_code.py -v -s`
     *   Verifies 10x, 200x, and 1000x user scenarios.
     *   Ensures >99% success rate and unique gift code delivery.
-*   **Performance Tests:** `pytest tests/test_performance_100x.py -s`
-    *   Saves statistics to `benchmark_stats.json`.
+*   **Benchmarks:** `python benchmarks/run_benchmark.py`
+    *   Simulates realistic load using Locust and saves statistics.
 
 ## Monitoring & Benchmarking
 The project includes a full-featured monitoring stack and automated benchmark suite.
@@ -64,5 +67,5 @@ The project includes a full-featured monitoring stack and automated benchmark su
     *   `config.py`: Settings & .env loading.
     *   `security.py`: Rate limiting logic.
     *   `kafka.py`: Kafka producer/consumer management.
-*   `tests/`: Contains test modules (e.g., `test_main.py`, `test_performance_100x.py`).
+*   `tests/`: Contains test modules (e.g., `test_main.py`, `test_e2e_gift_code.py`).
 *   `pyproject.toml`: Poetry configuration, dependency listing, and tool settings (Black, isort).

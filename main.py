@@ -1,8 +1,10 @@
+import os
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Response, status
 from loguru import logger
+from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, generate_latest, multiprocess
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from core.config import settings
@@ -32,7 +34,20 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Initialize Prometheus instrumentation
-Instrumentator().instrument(app).expose(app)
+instrumentator = Instrumentator().instrument(app)
+
+# Configure Prometheus exposition (handle Gunicorn multiprocess mode)
+if os.getenv("PROMETHEUS_MULTIPROC_DIR"):
+    logger.info("Prometheus multiprocess mode detected.")
+
+    @app.get("/metrics")
+    async def metrics():
+        registry = CollectorRegistry()
+        multiprocess.MultiProcessCollector(registry)
+        return Response(generate_latest(registry), media_type=CONTENT_TYPE_LATEST)
+
+else:
+    instrumentator.expose(app)
 
 
 @app.get("/")
@@ -60,6 +75,30 @@ async def queue() -> dict:
 
 
 if __name__ == "__main__":
-    from uvicorn import run
+    from gunicorn.app.base import BaseApplication
 
-    run("main:app", host=settings.HOST, port=settings.PORT, reload=True)
+    class StandaloneApplication(BaseApplication):
+        def __init__(self, app, options=None):
+            self.application = app
+            self.options = options or {}
+            super().__init__()
+
+        def load_config(self):
+            config = {
+                key: value for key, value in self.options.items() if key in self.cfg.settings and value is not None
+            }
+            for key, value in config.items():
+                self.cfg.set(key.lower(), value)
+
+        def load(self):
+            return self.application
+
+    options = {
+        "bind": f"{settings.HOST}:{settings.PORT}",
+        "workers": settings.WORKERS,
+        "worker_class": "uvicorn.workers.UvicornWorker",
+        "loglevel": settings.GUNICORN_LOG_LEVEL,
+        "keepalive": settings.GUNICORN_KEEPALIVE,
+        "reload": True,
+    }
+    StandaloneApplication(app, options).run()

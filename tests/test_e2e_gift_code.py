@@ -1,28 +1,22 @@
 import asyncio
 import json
-import multiprocessing
+import os
+import shutil
+import subprocess
 import uuid
 
 import httpx
 import pytest
-import uvicorn
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from loguru import logger
 
 from core.config import settings
 from core.security import RateLimiter
-from main import app
 
 # Constants for E2E test
 PORT = 8003
 HOST = "127.0.0.1"
 BASE_URL = f"http://{HOST}:{PORT}"
-
-
-def run_server():
-    """Run the FastAPI server."""
-    # We use uvicorn.run with the app object
-    uvicorn.run(app, host=HOST, port=PORT, log_level="error")
 
 
 async def run_mock_worker(group_id):
@@ -58,6 +52,7 @@ async def run_mock_worker(group_id):
 
 
 def start_worker_process(group_id):
+    # We still use multiprocessing for the worker to keep it independent of the async loop of the test
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
@@ -68,7 +63,7 @@ def start_worker_process(group_id):
 
 async def wait_for_server():
     async with httpx.AsyncClient() as client:
-        for _ in range(50):
+        for _ in range(100):  # Increased retries for gunicorn startup
             try:
                 response = await client.get(BASE_URL)
                 if response.status_code == 200:
@@ -106,14 +101,41 @@ async def run_scenario(num_users, concurrency):
     # Unique group for this specific test run
     worker_group = f"e2e-worker-{uuid.uuid4().hex[:6]}"
 
-    server_proc = multiprocessing.Process(target=run_server)
-    server_proc.start()
+    # Start Server with subprocess.Popen
+    cmd = [
+        "gunicorn",
+        "main:app",
+        "--workers",
+        "4",
+        "--worker-class",
+        "uvicorn.workers.UvicornWorker",
+        "--bind",
+        f"{HOST}:{PORT}",
+        "--log-level",
+        "error",
+    ]
+
+    # Ensure PROMETHEUS_MULTIPROC_DIR is set and exists
+    env = os.environ.copy()
+    multiproc_dir = f"/tmp/prometheus_multiproc_test_{uuid.uuid4().hex}"
+    os.makedirs(multiproc_dir, exist_ok=True)
+    env["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
+
+    # Use start_new_session to ensure we can kill the whole process group if needed
+    server_process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
+
+    # Start Worker
+    import multiprocessing
 
     worker_proc = multiprocessing.Process(target=start_worker_process, args=(worker_group,))
     worker_proc.start()
 
     try:
-        assert await wait_for_server(), "Server failed to start"
+        if not await wait_for_server():
+            logger.error("Server failed to start within timeout.")
+            # Print stderr/stdout if possible? (redirected to DEVNULL above)
+            raise RuntimeError("Server failed to start")
+
         # Wait for Kafka consumers to settle
         await asyncio.sleep(5)
 
@@ -133,10 +155,20 @@ async def run_scenario(num_users, concurrency):
 
         return status_counts, gift_codes
     finally:
-        server_proc.terminate()
-        server_proc.join()
+        # Terminate Server
+        server_process.terminate()
+        try:
+            server_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            server_process.kill()
+
+        # Terminate Worker
         worker_proc.terminate()
         worker_proc.join()
+
+        # Cleanup multiproc dir
+        if os.path.exists(multiproc_dir):
+            shutil.rmtree(multiproc_dir)
 
 
 @pytest.mark.asyncio
