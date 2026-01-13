@@ -1,5 +1,7 @@
 import asyncio
 import json
+import os
+import shutil
 import subprocess
 import uuid
 
@@ -112,8 +114,15 @@ async def run_scenario(num_users, concurrency):
         "--log-level",
         "error",
     ]
+
+    # Ensure PROMETHEUS_MULTIPROC_DIR is set and exists
+    env = os.environ.copy()
+    multiproc_dir = f"/tmp/prometheus_multiproc_test_{uuid.uuid4().hex}"
+    os.makedirs(multiproc_dir, exist_ok=True)
+    env["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
+
     # Use start_new_session to ensure we can kill the whole process group if needed
-    server_process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    server_process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
 
     # Start Worker
     import multiprocessing
@@ -156,6 +165,10 @@ async def run_scenario(num_users, concurrency):
         # Terminate Worker
         worker_proc.terminate()
         worker_proc.join()
+
+        # Cleanup multiproc dir
+        if os.path.exists(multiproc_dir):
+            shutil.rmtree(multiproc_dir)
 
 
 @pytest.mark.asyncio

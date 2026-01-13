@@ -1,8 +1,10 @@
+import os
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Response, status
 from loguru import logger
+from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, generate_latest, multiprocess
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from core.config import settings
@@ -32,7 +34,20 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Initialize Prometheus instrumentation
-Instrumentator().instrument(app).expose(app)
+instrumentator = Instrumentator().instrument(app)
+
+# Configure Prometheus exposition (handle Gunicorn multiprocess mode)
+if os.getenv("PROMETHEUS_MULTIPROC_DIR"):
+    logger.info("Prometheus multiprocess mode detected.")
+
+    @app.get("/metrics")
+    async def metrics():
+        registry = CollectorRegistry()
+        multiprocess.MultiProcessCollector(registry)
+        return Response(generate_latest(registry), media_type=CONTENT_TYPE_LATEST)
+
+else:
+    instrumentator.expose(app)
 
 
 @app.get("/")
